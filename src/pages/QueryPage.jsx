@@ -1,0 +1,247 @@
+import React, { useState, useRef, useEffect } from 'react';
+import apiService from '../services/apiService';
+import './QueryPage.css';
+
+function QueryPage({ user }) {
+  const [query, setQuery] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [retrievedDocs, setRetrievedDocs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('answer');
+  const [error, setError] = useState('');
+  const [recommendedQA, setRecommendedQA] = useState([]);
+  const answerBoxRef = useRef(null);
+  const sessionIdRef = useRef(sessionStorage.getItem('atlas-query-session-id'));
+
+  if (!sessionIdRef.current) {
+    sessionIdRef.current = crypto.randomUUID();
+    sessionStorage.setItem('atlas-query-session-id', sessionIdRef.current);
+  }
+
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      try {
+        const res = await apiService.getRecommendedQuestions();
+        if (res && res.recommended_qa) {
+          setRecommendedQA(res.recommended_qa);
+        }
+      } catch (err) {
+        console.warn('Failed to load recommended questions:', err);
+      }
+    };
+    fetchRecommended();
+  }, []);
+
+  const handleSelectRecommended = (qa) => {
+    setQuery(qa.question);
+    if (qa.answer) {
+      setAnswer(qa.answer);
+      setActiveTab('answer');
+    }
+  };
+
+  const handleAskQuestion = async (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setError('');
+    setAnswer('');
+    setRetrievedDocs([]);
+
+    try {
+      // Get the streaming response
+      const streamResponse = await apiService.askQuestion(query, sessionIdRef.current);
+      
+      if (!streamResponse.ok) {
+        throw new Error(`Error: ${streamResponse.status}`);
+      }
+
+      // Read the stream
+      const reader = streamResponse.body.getReader();
+      const decoder = new TextDecoder();
+      let fullAnswer = '';
+      let eventBuffer = '';
+
+      const handleStreamEvent = (eventBlock) => {
+        const lines = eventBlock.split('\n');
+        const eventName = lines.find((line) => line.startsWith('event:'))?.slice(6).trim();
+        const dataLine = lines.find((line) => line.startsWith('data:'))?.slice(5).trim();
+        if (!eventName || !dataLine) return;
+
+        const payload = JSON.parse(dataLine);
+        if (eventName === 'answer') {
+          fullAnswer += payload.content || '';
+          setAnswer(fullAnswer);
+          if (answerBoxRef.current) {
+            answerBoxRef.current.scrollTop = answerBoxRef.current.scrollHeight;
+          }
+        } else if (eventName === 'documents') {
+          setRetrievedDocs(payload.documents || []);
+        } else if (eventName === 'error') {
+          throw new Error(payload.message || 'Failed to get answer');
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (value) {
+          eventBuffer += decoder.decode(value, { stream: !done });
+          const events = eventBuffer.split('\n\n');
+          eventBuffer = events.pop();
+          events.forEach(handleStreamEvent);
+        }
+        if (done) break;
+      }
+      eventBuffer += decoder.decode();
+      if (eventBuffer.trim()) {
+        handleStreamEvent(eventBuffer);
+      }
+
+    } catch (err) {
+      setError(err.message || 'Failed to get answer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    setAnswer('');
+    setRetrievedDocs([]);
+    setError('');
+  };
+
+  return (
+    <main className="query-page">
+      <div className="query-header">
+        <h1>Ask Your Documents</h1>
+        <p>Ask questions about your ingested documents and get AI-powered answers</p>
+      </div>
+
+      <div className="query-container">
+        <div className="query-input-section">
+          {recommendedQA.length > 0 && (
+            <div className="recommended-section">
+              <p className="recommended-label">Suggested Questions</p>
+              <div className="recommended-buttons">
+                {recommendedQA.map((qa) => (
+                  <button
+                    key={qa.id}
+                    type="button"
+                    onClick={() => handleSelectRecommended(qa)}
+                    className="recommended-btn"
+                  >
+                    {qa.question}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleAskQuestion}>
+            <div className="query-input-group">
+              <label htmlFor="query-input" className="sr-only">Your question</label>
+              <textarea
+                id="query-input"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="What do you want to know? e.g., 'What was the revenue in 2023?'"
+                disabled={loading}
+                rows={4}
+                aria-label="Your question"
+              />
+              <div className="query-buttons">
+                <button
+                  type="submit"
+                  disabled={loading || !query.trim()}
+                  className="btn-primary"
+                >
+                  {loading ? 'Searching…' : '🚀 Ask Question'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="btn-secondary"
+                  disabled={loading}
+                  aria-label="Clear query and results"
+                >
+                  ✕ Clear
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {error && <div className="error-banner" role="alert" aria-live="assertive">{error}</div>}
+        </div>
+
+        {answer || retrievedDocs.length > 0 ? (
+          <div className="results-section">
+            <div className="tab-buttons">
+              <button
+                className={`tab-btn ${activeTab === 'answer' ? 'active' : ''}`}
+                onClick={() => setActiveTab('answer')}
+              >
+                💬 Answer
+              </button>
+              <button
+                className={`tab-btn ${activeTab === 'documents' ? 'active' : ''}`}
+                onClick={() => setActiveTab('documents')}
+              >
+                📄 Source Documents ({retrievedDocs.length})
+              </button>
+            </div>
+
+            {activeTab === 'answer' && (
+              <div className="answer-box" ref={answerBoxRef}>
+                {answer ? (
+                  <div className="answer-content">
+                    {answer}
+                  </div>
+                ) : (
+                  <div className="placeholder">Waiting for answer...</div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'documents' && (
+              <div className="documents-box">
+                {retrievedDocs.length > 0 ? (
+                  <div className="documents-list">
+                    {retrievedDocs.map((doc, idx) => (
+                      <div key={idx} className="document-item">
+                        <div className="doc-header">
+                          <h4>📄 Document {idx + 1}</h4>
+                          <div className="doc-scores">
+                            <span className="score-badge">
+                              Rerank: {((doc.rerank_score ?? 0) * 100).toFixed(1)}%
+                            </span>
+                            <span className="score-badge">
+                              Combined: {((doc.combined_score ?? 0) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="doc-content">
+                          {doc.content.substring(0, 500)}...
+                        </div>
+                        {doc.metadata.source && (
+                          <div className="doc-source">
+                            📌 Source: {doc.metadata.source}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="placeholder">No documents retrieved</div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </main>
+  );
+}
+
+export default QueryPage;

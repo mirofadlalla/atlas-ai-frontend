@@ -1,0 +1,25 @@
+/* Global Styles for Atlas AI Frontend */
+
+@import url('./styles/theme.css');
+@import url('./styles/animations.css');
+
+/* All global resets, typography, scrollbars, and base styles
+   are defined in styles/theme.css — do not redefine here. */
+
+/* Responsive Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background-color: white;
+  }
+
+  .no-print {
+    display: none;
+  }
+}
