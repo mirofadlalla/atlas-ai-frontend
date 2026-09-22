@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://16.171.2.206:8000/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "http://16.171.2.206:8000/health"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -3,14 +3,34 @@
  * Handles all HTTP requests to the backend API
  */
 
-const rawUrl =
-  process.env.REACT_APP_API_BASE_URL ||
-  process.env.REACT_APP_API_URL ||
-  process.env.VITE_API_BASE_URL ||
-  'http://localhost:8000';
+const resolveBaseUrl = () => {
+  const envUrl =
+    process.env.REACT_APP_API_BASE_URL ||
+    process.env.REACT_APP_API_URL ||
+    process.env.VITE_API_BASE_URL;
 
-const cleanBaseUrl = rawUrl.replace(/\/+$/, '');
-const API_BASE_URL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
+  // When loaded in a browser over HTTPS (e.g. deployed on Vercel at https://atlas-ai-frontend-tafu.vercel.app),
+  // directly calling an unencrypted HTTP backend (http://16.171.2.206:8000) causes modern browsers
+  // to block all requests as "Mixed Content", and also triggers CORS 400.
+  // Using relative path '' routes requests through Vercel's reverse proxy rewrites (configured in vercel.json).
+  if (
+    typeof window !== 'undefined' &&
+    window.location &&
+    window.location.protocol === 'https:' &&
+    (!envUrl || envUrl.startsWith('http://'))
+  ) {
+    return '';
+  }
+
+  return (envUrl || 'http://localhost:8000').replace(/\/+$/, '');
+};
+
+const cleanBaseUrl = resolveBaseUrl();
+const API_BASE_URL = cleanBaseUrl.endsWith('/api')
+  ? cleanBaseUrl
+  : cleanBaseUrl
+  ? `${cleanBaseUrl}/api`
+  : '/api';
 const SERVER_BASE_URL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl.slice(0, -4) : cleanBaseUrl;
 
 class ApiService {
