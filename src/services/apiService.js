@@ -3,11 +3,26 @@
  * Handles all HTTP requests to the backend API
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const rawUrl =
+  process.env.REACT_APP_API_BASE_URL ||
+  process.env.REACT_APP_API_URL ||
+  process.env.VITE_API_BASE_URL ||
+  'http://localhost:8000';
+
+const cleanBaseUrl = rawUrl.replace(/\/+$/, '');
+const API_BASE_URL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
+const SERVER_BASE_URL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl.slice(0, -4) : cleanBaseUrl;
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.serverURL = SERVER_BASE_URL;
+  }
+
+  // Check backend server health (/health)
+  async checkHealth() {
+    const response = await fetch(`${this.serverURL}/health`);
+    return this.handleResponse(response);
   }
 
   // Helper method to get common headers
@@ -245,16 +260,17 @@ class ApiService {
   }
 
   async generateEvalDataset(maxChunks = 30) {
-    const formData = new FormData();
-    formData.append('max_chunks', maxChunks);
-
     const token = localStorage.getItem('token');
+    const params = new URLSearchParams();
+    params.append('max_chunks', maxChunks.toString());
+
     const response = await fetch(`${this.baseURL}/eval/generate_dataset`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: formData,
+      body: params.toString(),
     });
     return this.handleResponse(response);
   }
@@ -278,16 +294,30 @@ class ApiService {
     return this.handleResponse(response);
   }
 
-  async registerViaInvitation(token, name, password, tenantId) {
-    const response = await fetch(`${this.baseURL}/auth/register-via-invitation`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token,
+  async registerViaInvitation(tokenOrObj, name, password, tenantId) {
+    let payload = {};
+    if (typeof tokenOrObj === 'object' && tokenOrObj !== null) {
+      payload = {
+        token: tokenOrObj.token,
+        password: tokenOrObj.password,
+        name: tokenOrObj.name,
+        tenant_id: tokenOrObj.tenantId || tokenOrObj.tenant_id,
+      };
+    } else {
+      payload = {
+        token: tokenOrObj,
         name,
         password,
         tenant_id: tenantId,
-      }),
+      };
+    }
+    // Remove undefined values
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+
+    const response = await fetch(`${this.baseURL}/auth/register-via-invitation`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     return this.handleResponse(response);
   }
@@ -433,12 +463,18 @@ class ApiService {
     return this.handleResponse(response);
   }
 
+  // Clear memory owned by authenticated user
+  async clearMemory() {
+    const response = await fetch(`${this.baseURL}/memory/clear`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
   // Helper method to handle responses
   async handleResponse(response) {
     // ── 401 Unauthorized: token expired or invalid ─────────────────────────
-    // Clear stored credentials and redirect to login so the user can
-    // re-authenticate. Pass a message via sessionStorage so the login page
-    // can display a friendly explanation.
     if (response.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -447,15 +483,10 @@ class ApiService {
         'Your session has expired. Please log in again.'
       );
       window.location.href = '/login';
-      // Return a pending promise — the page is navigating away anyway.
       return new Promise(() => {});
     }
 
     // ── 403 Forbidden: account approval revoked mid-session ────────────────
-    // The backend now checks approval_status on every request, so a user
-    // whose account was rejected after login will start getting 403s.
-    // We check the detail message to distinguish a real 403 (e.g. "not admin")
-    // from a session-revocation 403 ("Account is not approved").
     if (response.status === 403) {
       try {
         const body = await response.clone().json();
@@ -471,29 +502,49 @@ class ApiService {
           return new Promise(() => {});
         }
       } catch (_) {
-        // If we can't parse the body just fall through to normal error handling
+        // Fall through to normal error handling
       }
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      let error = {};
+      let rawText = '';
+      try {
+        rawText = await response.text();
+        error = JSON.parse(rawText);
+      } catch (_) {
+        error = { detail: rawText || `HTTP ${response.status}: ${response.statusText}` };
+      }
       console.error(`API Error [${response.status}]:`, error);
 
       // Extract meaningful error message
-      let errorMessage = 'Unknown error';
+      let errorMessage = `Request failed with status ${response.status}`;
       if (typeof error.detail === 'string') {
         errorMessage = error.detail;
+      } else if (Array.isArray(error.detail)) {
+        // Pydantic 422 validation error array
+        errorMessage = error.detail
+          .map((item) => {
+            const loc = Array.isArray(item.loc) ? item.loc.filter((p) => p !== 'body').join('.') : '';
+            return loc ? `${loc}: ${item.msg}` : item.msg || JSON.stringify(item);
+          })
+          .join('; ');
       } else if (error.detail && typeof error.detail === 'object') {
-        console.error('Error detail is object:', error.detail);
         errorMessage = error.detail.message || JSON.stringify(error.detail);
       } else if (error.message) {
         errorMessage = error.message;
+      } else if (rawText) {
+        errorMessage = rawText;
       }
 
       const customError = new Error(errorMessage);
       customError.status = response.status;
       customError.data = error;
       throw customError;
+    }
+
+    if (response.status === 204) {
+      return {};
     }
     return response.json().catch(() => ({}));
   }
