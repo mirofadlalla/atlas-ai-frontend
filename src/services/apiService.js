@@ -10,7 +10,7 @@ const resolveBaseUrl = () => {
     process.env.VITE_API_BASE_URL;
 
   // When loaded in a browser over HTTPS (e.g. deployed on Vercel at https://atlas-ai-frontend-tafu.vercel.app),
-  // directly calling an unencrypted HTTP backend (http://16.171.2.206:8000) causes modern browsers
+  // directly calling an unencrypted HTTP backend (e.g. http://16.16.133.241:8000) causes modern browsers
   // to block all requests as "Mixed Content", and also triggers CORS 400.
   // Using relative path '' routes requests through Vercel's reverse proxy rewrites (configured in vercel.json).
   if (
