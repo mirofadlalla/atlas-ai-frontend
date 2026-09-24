@@ -59,6 +59,15 @@ function DashboardPage({ user }) {
             <div className="card-action">Go to admin <ArrowIcon /></div>
           </Link>
         )}
+
+        {user?.role === 'super_admin' && (
+          <Link to="/super-admin" className="dashboard-card admin-card super-admin-card">
+            <div className="card-icon">⚡</div>
+            <h3>Super Admin</h3>
+            <p>Manage platform organizations, global users, and metrics</p>
+            <div className="card-action">Go to super admin <ArrowIcon /></div>
+          </Link>
+        )}
       </div>
 
       <div className="dashboard-stats">
@@ -68,16 +77,22 @@ function DashboardPage({ user }) {
         </div>
         <div className="stat-card">
           <h4>Role</h4>
-          <p className="stat-value">{user?.role}</p>
+          <p className="stat-value">
+            {user?.role === 'super_admin' ? 'Super Admin' : user?.role}
+          </p>
         </div>
         <div className="stat-card">
           <h4>Tenant</h4>
-          <p className="stat-value">{getOrganizationName(user) || user?.tenant_id}</p>
+          <p className="stat-value">
+            {user?.role === 'super_admin'
+              ? 'Global Platform'
+              : getOrganizationName(user) || user?.tenant_id || '—'}
+          </p>
         </div>
         <div className="stat-card">
           <h4>Approval Status</h4>
-          <p className={`stat-value dash-badge dash-badge-${user?.approval_status}`}>
-            {user?.approval_status}
+          <p className={`stat-value dash-badge dash-badge-${user?.approval_status || 'approved'}`}>
+            {user?.approval_status || 'approved'}
           </p>
         </div>
       </div>

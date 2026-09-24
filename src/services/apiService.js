@@ -22,7 +22,7 @@ const resolveBaseUrl = () => {
     return '';
   }
 
-  return (envUrl || 'http://localhost:8000').replace(/\/+$/, '');
+  return (envUrl || 'http://18.199.13.173:8000').replace(/\/+$/, '');
 };
 
 const cleanBaseUrl = resolveBaseUrl();
@@ -488,6 +488,127 @@ class ApiService {
     const response = await fetch(`${this.baseURL}/memory/clear`, {
       method: 'DELETE',
       headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  // ==================== Super Admin Endpoints ====================
+
+  async getSuperAdminStats() {
+    const response = await fetch(`${this.baseURL}/super-admin/stats`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getSuperAdminTenants() {
+    const response = await fetch(`${this.baseURL}/super-admin/tenants`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getSuperAdminTenantDetail(tenantId) {
+    const response = await fetch(`${this.baseURL}/super-admin/tenants/${tenantId}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateSuperAdminTenant(tenantId, payload) {
+    const response = await fetch(`${this.baseURL}/super-admin/tenants/${tenantId}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteSuperAdminTenant(tenantId) {
+    const response = await fetch(`${this.baseURL}/super-admin/tenants/${tenantId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getSuperAdminUsers() {
+    const response = await fetch(`${this.baseURL}/super-admin/users`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async getSuperAdminTenantUsers(tenantId) {
+    const response = await fetch(`${this.baseURL}/super-admin/tenants/${tenantId}/users`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteSuperAdminUser(userId) {
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateSuperAdminUserRole(userId, role) {
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ role }),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateSuperAdminUserStatus(userId, approvalStatus) {
+    const response = await fetch(`${this.baseURL}/super-admin/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ approval_status: approvalStatus }),
+    });
+    return this.handleResponse(response);
+  }
+
+  // ==================== Tenant Admin User Management ====================
+
+  async getAdminUsers() {
+    const response = await fetch(`${this.baseURL}/auth/admin/users`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async deleteAdminUser(userId) {
+    const response = await fetch(`${this.baseURL}/auth/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateAdminUserRole(userId, role) {
+    const response = await fetch(`${this.baseURL}/auth/admin/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ role }),
+    });
+    return this.handleResponse(response);
+  }
+
+  async updateAdminUserStatus(userId, approvalStatus) {
+    const response = await fetch(`${this.baseURL}/auth/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ approval_status: approvalStatus }),
     });
     return this.handleResponse(response);
   }

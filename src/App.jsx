@@ -11,13 +11,18 @@ import QueryPage from './pages/QueryPage';
 import AgentPage from './pages/AgentPage';
 import IngestPage from './pages/IngestPage';
 import AdminPanel from './pages/AdminPanel';
+import AdminUsersPage from './pages/AdminUsersPage';
+import SuperAdminDashboardPage from './pages/SuperAdminDashboardPage';
+import SuperAdminTenantsPage from './pages/SuperAdminTenantsPage';
+import SuperAdminTenantDetailPage from './pages/SuperAdminTenantDetailPage';
+import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
 import EvaluationPage from './pages/EvaluationPage';
 import CostAnalyticsPage from './pages/CostAnalyticsPage';
 import TenantDatabasePage from './pages/TenantDatabasePage';
 
 // Import components
 import Navigation from './components/Navigation';
-import ProtectedRoute, { AdminRoute } from './components/ProtectedRoute';
+import ProtectedRoute, { AdminRoute, SuperAdminRoute } from './components/ProtectedRoute';
 import { ToastProvider } from './components/Toast';
 import apiService from './services/apiService';
 import { mergeProfileIntoUser } from './utils/user';
@@ -208,7 +213,56 @@ function App() {
               </AdminRoute>
             }
           />
-          <Route path="/admin/database" element={<AdminRoute isAuthenticated={isAuthenticated} user={user}><TenantDatabasePage /></AdminRoute>} />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute isAuthenticated={isAuthenticated} user={user}>
+                <AdminUsersPage user={user} />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/database"
+            element={
+              <AdminRoute isAuthenticated={isAuthenticated} user={user}>
+                <TenantDatabasePage />
+              </AdminRoute>
+            }
+          />
+
+          {/* Super Admin Routes */}
+          <Route
+            path="/super-admin"
+            element={
+              <SuperAdminRoute isAuthenticated={isAuthenticated} user={user}>
+                <SuperAdminDashboardPage user={user} />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super-admin/tenants"
+            element={
+              <SuperAdminRoute isAuthenticated={isAuthenticated} user={user}>
+                <SuperAdminTenantsPage user={user} />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super-admin/tenants/:id"
+            element={
+              <SuperAdminRoute isAuthenticated={isAuthenticated} user={user}>
+                <SuperAdminTenantDetailPage user={user} />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super-admin/users"
+            element={
+              <SuperAdminRoute isAuthenticated={isAuthenticated} user={user}>
+                <SuperAdminUsersPage user={user} />
+              </SuperAdminRoute>
+            }
+          />
 
           {/* Catch all */}
           <Route path="*" element={<Navigate to="/" />} />

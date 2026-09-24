@@ -64,8 +64,17 @@ function Navigation({ user, onLogout }) {
         {user?.role === 'admin' && (
           <>
             <span className="nav-divider" aria-hidden="true" />
-            <NavLink to="/admin"          className={({ isActive }) => `nav-link nav-link-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Admin</NavLink>
+            <NavLink to="/admin" end className={({ isActive }) => `nav-link nav-link-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Admin</NavLink>
+            <NavLink to="/admin/users" className={({ isActive }) => `nav-link nav-link-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Users</NavLink>
             <NavLink to="/admin/database" className={({ isActive }) => `nav-link nav-link-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Tenant DB</NavLink>
+          </>
+        )}
+        {user?.role === 'super_admin' && (
+          <>
+            <span className="nav-divider" aria-hidden="true" />
+            <NavLink to="/super-admin" end className={({ isActive }) => `nav-link nav-link-super-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Super Admin</NavLink>
+            <NavLink to="/super-admin/tenants" className={({ isActive }) => `nav-link nav-link-super-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Tenants</NavLink>
+            <NavLink to="/super-admin/users" className={({ isActive }) => `nav-link nav-link-super-admin${isActive ? ' nav-link-active' : ''}`} onClick={closeMenu} role="listitem">Users</NavLink>
           </>
         )}
       </div>
@@ -94,8 +103,14 @@ function Navigation({ user, onLogout }) {
         <div className="user-info" aria-label={`Signed in as ${displayName}`}>
           <span className="user-name">{displayName}</span>
           <span className="user-role">
-            {user?.role}
-            {orgName && <span className="user-org"> · {orgName}</span>}
+            {user?.role === 'super_admin' ? (
+              <span className="badge-super-admin-nav">Super Admin</span>
+            ) : (
+              <>
+                {user?.role}
+                {orgName && <span className="user-org"> · {orgName}</span>}
+              </>
+            )}
           </span>
         </div>
         <button onClick={handleLogout} className="btn-logout">
