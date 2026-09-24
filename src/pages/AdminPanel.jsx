@@ -4,6 +4,12 @@ import Modal from '../components/Modal';
 import { useToast } from '../components/Toast';
 import './AdminPanel.css';
 
+function formatDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString();
+}
+
 function AdminPanel({ user }) {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('invitations');
@@ -307,8 +313,8 @@ function AdminPanel({ user }) {
                           <h4>{inv.invited_email}</h4>
                           <span className={`status-badge status-${inv.status}`}>{inv.status}</span>
                         </div>
-                        <p>Sent: {new Date(inv.created_at).toLocaleDateString()}</p>
-                        <p>Expires: {new Date(inv.expires_at).toLocaleDateString()}</p>
+                        <p>Sent: {formatDate(inv.created_at)}</p>
+                        <p>Expires: {formatDate(inv.expires_at)}</p>
                         {inv.token && (
                           <p>
                             Token: <span className="token-value">{inv.token}</span>{' '}
@@ -357,7 +363,7 @@ function AdminPanel({ user }) {
                           <h4>{pendingUser.name}</h4>
                         </div>
                         <p className="email">{pendingUser.email}</p>
-                        <p>Registered: {new Date(pendingUser.created_at).toLocaleDateString()}</p>
+                        <p>Registered: {formatDate(pendingUser.created_at)}</p>
                       </div>
                       <div className="item-actions">
                         <button

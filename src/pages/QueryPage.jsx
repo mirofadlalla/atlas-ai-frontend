@@ -175,7 +175,7 @@ function QueryPage({ user }) {
                   disabled={loading || !query.trim()}
                   className="btn-primary"
                 >
-                  {loading ? 'Searching…' : '🚀 Ask Question'}
+                  {loading ? 'Searching…' : 'Ask Question'}
                 </button>
                 <button
                   type="button"
@@ -184,7 +184,7 @@ function QueryPage({ user }) {
                   disabled={loading}
                   aria-label="Clear query and results"
                 >
-                  ✕ Clear
+                  Clear
                 </button>
               </div>
             </div>

@@ -120,6 +120,14 @@
   font-size: var(--text-xs);
   color: var(--text-muted);
   text-transform: capitalize;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-org {
+  text-transform: none;
 }
 
 .btn-logout {
@@ -140,6 +148,28 @@
   background: var(--bg-error);
   border-color: rgba(239, 68, 68, 0.4);
   color: var(--text-error);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+}
+
+.theme-toggle:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 /* ===== HAMBURGER (mobile only) ===== */

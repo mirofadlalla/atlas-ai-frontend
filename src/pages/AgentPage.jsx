@@ -49,6 +49,10 @@ const AgentPage = () => {
   };
 
   useEffect(() => {
+    // Skip the very first run: on mount there's nothing to show yet, and
+    // scrolling to an empty output area pulls the whole page (nav included)
+    // out of view before the user has asked anything.
+    if (!currentThought && !finalAnswer && !toolStatus) return;
     scrollToBottom();
   }, [currentThought, finalAnswer, toolStatus]);
 

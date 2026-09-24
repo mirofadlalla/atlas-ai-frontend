@@ -70,7 +70,7 @@ function TenantRegistrationPage({ setIsAuthenticated, setUser }) {
         email: resolvedEmail,
         role: 'admin',
         tenant_id: data.tenant_id,
-        organization: resolvedOrg,
+        organization_name: resolvedOrg,
         approval_status: 'approved',
       };
 
@@ -92,7 +92,7 @@ function TenantRegistrationPage({ setIsAuthenticated, setUser }) {
     <div className="tenant-registration-container">
       <div className="registration-card">
         <div className="registration-header">
-          <h1>🚀 Create Your Atlas AI Workspace</h1>
+          <h1>Create Your Atlas AI Workspace</h1>
           <p>Set up your multi-tenant RAG platform</p>
         </div>
 
